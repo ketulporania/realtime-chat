@@ -204,8 +204,10 @@ function RoomChat({ roomId }: { roomId: string }) {
         if (cancelled) return;
 
         setRoomName(room.name);
-        setMessages(messagesData.messages);
-        setUserProfiles(profilesFromMessages(messagesData.messages, user));
+        setMessages(messagesData.messages ?? []);
+        setUserProfiles(
+          profilesFromMessages(messagesData.messages ?? [], user)
+        );
       } catch (err) {
         if (!cancelled) {
           setLoadError(

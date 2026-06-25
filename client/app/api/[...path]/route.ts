@@ -14,6 +14,16 @@ const HOP_BY_HOP = new Set([
   "upgrade",
 ]);
 
+/** Headers to strip from upstream responses (body is already decompressed by fetch). */
+const STRIP_RESPONSE_HEADERS = new Set([
+  ...HOP_BY_HOP,
+  "content-encoding",
+  "content-length",
+]);
+
+/** Headers to strip from incoming browser requests before forwarding upstream. */
+const STRIP_REQUEST_HEADERS = new Set([...HOP_BY_HOP, "host", "accept-encoding"]);
+
 function normalizeSetCookie(value: string): string {
   return value
     .split(";")
@@ -52,7 +62,7 @@ async function proxyRequest(
   const headers = new Headers();
   req.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (HOP_BY_HOP.has(lower) || lower === "host") return;
+    if (STRIP_REQUEST_HEADERS.has(lower)) return;
     headers.set(key, value);
   });
 
@@ -80,14 +90,15 @@ async function proxyRequest(
   }
 
   const responseHeaders = new Headers();
+  const body = await backendRes.arrayBuffer();
 
   backendRes.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (HOP_BY_HOP.has(lower) || lower === "set-cookie") return;
+    if (STRIP_RESPONSE_HEADERS.has(lower) || lower === "set-cookie") return;
     responseHeaders.set(key, value);
   });
 
-  const response = new NextResponse(backendRes.body, {
+  const response = new NextResponse(body, {
     status: backendRes.status,
     statusText: backendRes.statusText,
     headers: responseHeaders,

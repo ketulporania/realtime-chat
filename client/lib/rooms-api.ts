@@ -128,9 +128,14 @@ export async function fetchRoomMessages(
 
   const request = apiFetch<MessagesPage>(`/api/rooms/${roomId}/messages`)
     .then((data) => {
-      messagesCache.set(roomId, { data, fetchedAt: Date.now() });
+      const normalized: MessagesPage = {
+        messages: data.messages ?? [],
+        nextCursor: data.nextCursor ?? null,
+        hasMore: data.hasMore ?? false,
+      };
+      messagesCache.set(roomId, { data: normalized, fetchedAt: Date.now() });
       messagesInflight.delete(roomId);
-      return data;
+      return normalized;
     })
     .catch((err) => {
       messagesInflight.delete(roomId);
