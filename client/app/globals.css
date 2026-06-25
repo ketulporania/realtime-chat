@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f1419;
+  --surface: #ffffff;
+  --surface-muted: #f4f6fb;
+  --foreground: #0f172a;
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --sidebar: #111827;
+  --sidebar-border: #1f2937;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--surface-muted);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.chat-scroll:not(:hover):not(:focus-within) {
+  scrollbar-color: transparent transparent;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.app-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(79, 70, 229, 0.12), transparent),
+    linear-gradient(to bottom, #f8fafc, #f1f5f9);
+}
+
+.auth-gradient {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.15), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(14, 165, 233, 0.1), transparent 40%),
+    linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+}
+
+.card-shadow {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+}
