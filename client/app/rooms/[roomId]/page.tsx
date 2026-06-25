@@ -86,8 +86,12 @@ function RoomChat({ roomId }: { roomId: string }) {
   const [loadError, setLoadError] = useState("");
   const [socketToast, setSocketToast] = useState<string | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const initializedRef = useRef(false);
   const wasConnectedRef = useRef(false);
+  const roomIdRef = useRef(roomId);
+
+  roomIdRef.current = roomId;
 
   const typingUsers = useMemo(
     () => Array.from(typingByUserId.values()),
@@ -115,22 +119,46 @@ function RoomChat({ roomId }: { roomId: string }) {
     let cancelled = false;
     const socket = connectSocket();
 
-    const onConnect = () => {
-      setSocketConnected(true);
-      wasConnectedRef.current = true;
-      setSocketToast(null);
+    const joinRoom = () => {
+      socket.emit("room:join", { roomId: roomIdRef.current });
     };
 
-    const onDisconnect = () => {
-      setSocketConnected(false);
-      if (wasConnectedRef.current) {
-        showSocketToast("Connection lost. Messages may not send until you reconnect.");
+    const onConnect = () => {
+      setSocketConnected(true);
+      setReconnecting(false);
+      wasConnectedRef.current = true;
+      setSocketToast(null);
+      if (initializedRef.current) {
+        joinRoom();
       }
     };
 
-    const onConnectError = (err: Error) => {
+    const onDisconnect = (reason: string) => {
       setSocketConnected(false);
-      showSocketToast(`Could not connect: ${err.message}`);
+      if (!wasConnectedRef.current) return;
+
+      if (reason === "io server disconnect") {
+        socket.connect();
+      }
+
+      setReconnecting(true);
+      setSocketToast("Reconnecting...");
+    };
+
+    const onConnectError = () => {
+      setSocketConnected(false);
+      if (socket.active) {
+        setReconnecting(true);
+        setSocketToast("Reconnecting...");
+        return;
+      }
+      setReconnecting(false);
+      showSocketToast("Could not connect to chat. Check your network.");
+    };
+
+    const onReconnectFailed = () => {
+      setReconnecting(false);
+      showSocketToast("Connection lost. Reload the page to reconnect.");
     };
 
     const onMessageNew = (payload: MessageNewPayload) => {
@@ -225,6 +253,7 @@ function RoomChat({ roomId }: { roomId: string }) {
       socket.on("connect", onConnect);
       socket.on("disconnect", onDisconnect);
       socket.on("connect_error", onConnectError);
+      socket.io.on("reconnect_failed", onReconnectFailed);
       socket.on("message:new", onMessageNew);
       socket.on("presence:update", onPresenceUpdate);
       socket.on("typing:update", onTypingUpdate);
@@ -243,14 +272,26 @@ function RoomChat({ roomId }: { roomId: string }) {
 
     init();
 
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!initializedRef.current) return;
+      if (!socket.connected) {
+        socket.connect();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
       if (initializedRef.current) {
         socket.emit("room:leave", { roomId });
       }
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("connect_error", onConnectError);
+      socket.io.off("reconnect_failed", onReconnectFailed);
       socket.off("message:new", onMessageNew);
       socket.off("presence:update", onPresenceUpdate);
       socket.off("typing:update", onTypingUpdate);
@@ -261,14 +302,16 @@ function RoomChat({ roomId }: { roomId: string }) {
 
   const handleSendMessage = useCallback(
     (content: string) => {
-      if (!socketConnected) {
-        showSocketToast("Not connected. Reconnecting...");
-        connectSocket().connect();
+      const socket = connectSocket();
+      if (!socket.connected) {
+        setReconnecting(true);
+        setSocketToast("Reconnecting...");
+        socket.connect();
         return;
       }
-      connectSocket().emit("message:send", { roomId, content });
+      socket.emit("message:send", { roomId, content });
     },
-    [roomId, socketConnected, showSocketToast]
+    [roomId]
   );
 
   const handleTypingStart = useCallback(() => {
@@ -306,7 +349,7 @@ function RoomChat({ roomId }: { roomId: string }) {
           backLabel="Rooms"
           user={user}
           onLogout={logout}
-          badge={<LiveBadge connected={socketConnected} />}
+          badge={<LiveBadge connected={socketConnected && !reconnecting} />}
         />
 
         {loadError && (
@@ -346,7 +389,9 @@ function RoomChat({ roomId }: { roomId: string }) {
       {socketToast && (
         <Toast
           message={socketToast}
-          variant={socketConnected ? "warning" : "error"}
+          variant={
+            reconnecting ? "warning" : socketConnected ? "warning" : "error"
+          }
           onDismiss={() => setSocketToast(null)}
         />
       )}
