@@ -126,12 +126,8 @@ export async function login(req: Request, res: Response): Promise<void> {
 }
 
 export async function logout(_req: Request, res: Response): Promise<void> {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  });
+  const { maxAge: _maxAge, ...clearOptions } = getCookieOptions();
+  res.clearCookie(COOKIE_NAME, clearOptions);
   res.json({ message: "Logged out successfully" });
 }
 
