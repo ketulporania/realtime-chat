@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
+import { resolveBackendUrl } from "./lib/backend-url";
 
-const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
+const backendUrl = resolveBackendUrl();
 
 const nextConfig: NextConfig = {
   async rewrites() {

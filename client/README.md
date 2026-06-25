@@ -137,14 +137,22 @@ Ensure the repo includes the `client/` folder (not a nested git repo).
 
 ### 5.3 Configure environment variables
 
-Before deploying, add these under **Environment Variables**:
+Production uses a **same-origin API proxy** on Vercel (auth cookies work in all browsers). Set **one** of these server-side URLs:
 
 | Name | Value | Environments |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | `https://your-server.up.railway.app` | Production, Preview |
-| `NEXT_PUBLIC_SOCKET_URL` | `https://your-server.up.railway.app` | Production, Preview |
+| `BACKEND_URL` | `https://your-server.up.railway.app` | Production, Preview |
 
-Use your **deployed backend URL** from Railway or Render (see [`../server/README.md`](../server/README.md)).
+**Or** use `NEXT_PUBLIC_API_URL` with the same Railway URL if you prefer — the proxy reads either variable. Include `https://`.
+
+Do **not** set `NEXT_PUBLIC_SOCKET_URL` in production — Socket.io uses the same Vercel origin automatically.
+
+**Local development** still uses `client/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL="http://localhost:4000"
+NEXT_PUBLIC_SOCKET_URL="http://localhost:4000"
+```
 
 ### 5.4 Deploy
 
@@ -167,7 +175,7 @@ Redeploy the server so CORS and Socket.io accept requests from your Vercel domai
 1. Open your Vercel URL
 2. Register a new account
 3. Create a room and send a message
-4. Open DevTools → **Network** — API calls should go to your server URL, not `localhost`
+4. Open DevTools → **Network** — API calls should go to `your-app.vercel.app/api/...` (not Railway directly)
 
 ---
 

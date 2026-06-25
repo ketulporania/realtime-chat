@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveBackendUrl } from "@/lib/backend-url";
 
 export const runtime = "nodejs";
-
-const BACKEND_URL = process.env.BACKEND_URL?.replace(/\/$/, "");
 
 const HOP_BY_HOP = new Set([
   "connection",
@@ -35,15 +34,20 @@ async function proxyRequest(
   req: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  if (!BACKEND_URL) {
+  const backendUrl = resolveBackendUrl();
+
+  if (!backendUrl) {
     return NextResponse.json(
-      { error: "Server proxy is not configured" },
+      {
+        error:
+          "Server proxy is not configured. Add BACKEND_URL (or NEXT_PUBLIC_API_URL) on Vercel with your Railway URL, then redeploy.",
+      },
       { status: 503 }
     );
   }
 
   const { path } = await context.params;
-  const targetUrl = `${BACKEND_URL}/api/${path.join("/")}${req.nextUrl.search}`;
+  const targetUrl = `${backendUrl}/api/${path.join("/")}${req.nextUrl.search}`;
 
   const headers = new Headers();
   req.headers.forEach((value, key) => {
@@ -62,7 +66,19 @@ async function proxyRequest(
     init.body = await req.arrayBuffer();
   }
 
-  const backendRes = await fetch(targetUrl, init);
+  let backendRes: Response;
+  try {
+    backendRes = await fetch(targetUrl, init);
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Could not reach the backend server. Check BACKEND_URL on Vercel and that Railway is running.",
+      },
+      { status: 502 }
+    );
+  }
+
   const responseHeaders = new Headers();
 
   backendRes.headers.forEach((value, key) => {
