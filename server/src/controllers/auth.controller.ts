@@ -90,8 +90,10 @@ export async function register(req: Request, res: Response): Promise<void> {
     data: { username, email, passwordHash, avatarColor },
   });
 
-  setAuthCookie(res, user.id);
-  res.status(201).json({ user: sanitizeUser(user) });
+  res.status(201).json({
+    message: "Account created successfully",
+    user: sanitizeUser(user),
+  });
 }
 
 export async function login(req: Request, res: Response): Promise<void> {

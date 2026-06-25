@@ -30,6 +30,8 @@ export interface UserProfile {
   avatarColor: string;
 }
 
+import { getApiBaseUrl } from "@/lib/config";
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -41,13 +43,11 @@ export class ApiError extends Error {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...options,
     credentials: "include",
     headers: {

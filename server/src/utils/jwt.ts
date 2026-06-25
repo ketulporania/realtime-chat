@@ -23,7 +23,7 @@ export function getCookieOptions() {
   return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
+    sameSite: "lax" as const,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/",
   };

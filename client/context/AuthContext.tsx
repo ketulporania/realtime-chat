@@ -41,24 +41,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const register = useCallback(
+    async (username: string, email: string, password: string) => {
+      await apiFetch<{ message: string }>("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ username, email, password }),
+      });
+    },
+    []
+  );
+
   const login = useCallback(async (email: string, password: string) => {
     const data = await apiFetch<{ user: User }>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
     setUser(data.user);
+    const session = await apiFetch<{ user: User | null }>("/api/auth/me");
+    if (!session.user) {
+      setUser(null);
+      throw new Error("Session could not be established. Please try again.");
+    }
+    setUser(session.user);
   }, []);
-
-  const register = useCallback(
-    async (username: string, email: string, password: string) => {
-      const data = await apiFetch<{ user: User }>("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ username, email, password }),
-      });
-      setUser(data.user);
-    },
-    []
-  );
 
   const logout = useCallback(async () => {
     try {

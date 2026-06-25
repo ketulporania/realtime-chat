@@ -11,12 +11,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      setChecking(false);
-      return;
-    }
     refreshUser().finally(() => setChecking(false));
-  }, [refreshUser, user]);
+  }, [refreshUser]);
 
   useEffect(() => {
     if (!checking && !user) {

@@ -84,7 +84,9 @@ export default function RegisterPage() {
         parsed.data.email,
         parsed.data.password
       );
-      router.push("/rooms");
+      router.push(
+        `/login?registered=1&email=${encodeURIComponent(parsed.data.email)}`
+      );
     } catch (err) {
       setFormError(
         err instanceof ApiError

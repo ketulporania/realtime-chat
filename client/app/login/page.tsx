@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthLayout, AuthError } from "@/components/AuthLayout";
 import { FormField } from "@/components/ui/FormField";
+import { PulseLoader } from "@/components/ui/PulseLoader";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
 import {
@@ -17,14 +18,39 @@ import {
 type FieldErrors = Partial<Record<keyof LoginFormData, string>>;
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthLayout title="Welcome back" subtitle="Loading sign in...">
+          <div className="flex justify-center py-8">
+            <PulseLoader />
+          </div>
+        </AuthLayout>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const registered = searchParams.get("registered") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [touched, setTouched] = useState<Partial<Record<keyof LoginFormData, boolean>>>({});
+
+  useEffect(() => {
+    const emailFromQuery = searchParams.get("email");
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+    }
+  }, [searchParams]);
 
   function getValues(): LoginFormData {
     return { email, password };
@@ -79,7 +105,11 @@ export default function LoginPage() {
       router.push("/rooms");
     } catch (err) {
       setFormError(
-        err instanceof ApiError ? err.message : "Login failed. Please try again."
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "Login failed. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -92,6 +122,14 @@ export default function LoginPage() {
       subtitle="Sign in to continue to your conversations"
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {registered && (
+          <div
+            role="status"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          >
+            Account created successfully. Sign in to continue.
+          </div>
+        )}
         {formError && <AuthError message={formError} />}
 
         <FormField
